@@ -1,0 +1,129 @@
+@model ImportExamViewModel
+@{
+    ViewData["Title"] = "Import đề thi";
+}
+
+<div class="page-heading">
+    <div>
+        <h1>Import đề thi</h1>
+        <p>Tải đề TOEIC Reading lên để kiểm tra, lưu nháp và chỉnh sửa trước khi xuất bản.</p>
+    </div>
+    <a class="button button-secondary" asp-controller="InstructorExams" asp-action="Index">← Quay lại danh sách</a>
+</div>
+
+<div class="step-list" aria-label="Các bước tạo đề">
+    <button class="step @(Model.CurrentStep == 1 ? "active" : "completed")"
+            type="button"
+            id="upload-step"
+            aria-current="@(Model.CurrentStep == 1 ? "step" : null)">
+        1&nbsp; Tải tài liệu
+    </button>
+    <button class="step @(Model.CurrentStep == 2 ? "active" : "")"
+            type="submit"
+            form="import-form"
+            aria-current="@(Model.CurrentStep == 2 ? "step" : null)">
+        2&nbsp; Kiểm tra định dạng
+    </button>
+    <button class="step"
+            type="button"
+            disabled
+            title="Hoàn tất kiểm tra định dạng để chuyển sang chỉnh sửa">
+        3&nbsp; Chỉnh sửa &amp; xem trước đề thi
+    </button>
+</div>
+
+<div class="import-grid">
+    <section class="card panel">
+        <h2>Tài liệu nguồn</h2>
+        <p class="panel-subtitle">Có thể import từng Part để thử hoặc chỉnh sửa; phần được tải lên sẽ lưu thành bản nháp.</p>
+
+        @if (Model.Errors.Count > 0)
+        {
+            <div class="notice warning" role="alert">
+                <strong>Phát hiện lỗi định dạng. Hãy sửa file Word rồi tải lại:</strong>
+                <ul>
+                    @foreach (var error in Model.Errors)
+                    {
+                        <li>@error</li>
+                    }
+                </ul>
+            </div>
+        }
+        <div asp-validation-summary="ModelOnly" class="validation" role="alert"></div>
+
+        @if (Model.CurrentStep == 2 && Model.Errors.Count > 0)
+        {
+            <p class="notice info" role="status">
+                Sau khi file hợp lệ, hệ thống sẽ tự chuyển sang bước chỉnh sửa và xem trước đề thi.
+            </p>
+        }
+
+        <form id="import-form" asp-controller="InstructorExams" asp-action="Import" method="post" enctype="multipart/form-data">
+            @Html.AntiForgeryToken()
+            <div class="field">
+                <label asp-for="Title"></label>
+                <input asp-for="Title" required maxlength="200" placeholder="Ví dụ: TOEIC Reading Test 03" />
+                <span asp-validation-for="Title" class="validation"></span>
+            </div>
+
+            <div class="field">
+                <label class="drop-zone" for="docx-file">
+                    <span aria-hidden="true" style="font-size:28px">⇧</span>
+                    <strong>Kéo thả file .docx vào đây</strong>
+                    <span>hoặc bấm để chọn tài liệu · tối đa 20 MB</span>
+                    <span id="selected-file">TOEIC Reading · .docx</span>
+                </label>
+                <input asp-for="File" class="file-input" id="docx-file" type="file"
+                       required
+                       accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document" />
+                <span asp-validation-for="File" class="validation"></span>
+            </div>
+
+            <div class="actions">
+                <button class="button" type="submit">Tải &amp; kiểm tra định dạng</button>
+                <a class="button button-secondary" asp-controller="InstructorExams" asp-action="Index">Hủy</a>
+            </div>
+        </form>
+    </section>
+
+    <aside class="card panel">
+        <h2>Định dạng DOCX hỗ trợ</h2>
+        <p class="panel-subtitle">Có thể tải đề đầy đủ hoặc một phần đề. Mỗi câu cần đủ bốn lựa chọn và một đáp án đúng.</p>
+        <div class="issue">
+            <strong>Nhãn nội dung</strong>
+            <p>Dùng [PART: 5/6/7], [Q: số], [A] đến [D], [KEY: B] và [EXPLANATION: ...]. Mỗi câu cần đủ bốn đáp án.</p>
+        </div>
+        <div class="issue">
+            <strong>Đánh dấu đáp án đúng</strong>
+            <p>Hỗ trợ tag KEY/ANSWER/CORRECT, hoặc định dạng đậm, tô sáng, gạch chân, màu chữ và ký hiệu như ✓ hay * trước đáp án.</p>
+        </div>
+        <div class="issue">
+            <strong>Đoạn đọc</strong>
+            <p>Đặt đoạn Part 6/7 trong bảng Word ngay trước nhóm câu hỏi dùng đoạn đó.</p>
+        </div>
+        <div class="notice info" style="margin:16px 0 0">
+            Không bắt buộc đủ 100 câu mới xuất bản. Chỉ cần các câu đã tải lên có nội dung, đủ đáp án A-D, đáp án đúng và đoạn đọc hợp lệ cho Part 6/7.
+        </div>
+    </aside>
+</div>
+
+<script>
+    const fileInput = document.getElementById('docx-file');
+    const selectedFile = document.getElementById('selected-file');
+    const dropZone = document.querySelector('.drop-zone');
+    const uploadStep = document.getElementById('upload-step');
+
+    uploadStep.addEventListener('click', () => fileInput.click());
+    dropZone.addEventListener('dragover', event => event.preventDefault());
+    dropZone.addEventListener('drop', event => {
+        event.preventDefault();
+        if (event.dataTransfer.files.length) {
+            fileInput.files = event.dataTransfer.files;
+            fileInput.dispatchEvent(new Event('change'));
+        }
+    });
+    fileInput.addEventListener('change', () => {
+        const file = fileInput.files[0];
+        if (file) selectedFile.textContent = `${file.name} · ${(file.size / 1024 / 1024).toFixed(2)} MB`;
+    });
+</script>

@@ -1,0 +1,196 @@
+@model backend.Models.ViewModels.StaffLoginViewModel
+@{
+    Layout = null;
+    var loginErrors = ViewData.ModelState.Values
+        .SelectMany(entry => entry.Errors)
+        .Select(error => error.ErrorMessage)
+        .Where(message => !string.IsNullOrWhiteSpace(message))
+        .ToArray();
+}
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#f3f6fb" />
+    <title>Đăng nhập quản trị - Readwise</title>
+    <style>
+        :root {
+            color-scheme: light;
+            font-family: Inter, "Segoe UI", Arial, sans-serif;
+            font-synthesis: none;
+            text-rendering: optimizeLegibility;
+            color: #182f52;
+            background: #f3f6fb;
+        }
+        * { box-sizing: border-box; }
+        body { margin: 0; min-width: 320px; min-height: 100vh; }
+        button, input { font: inherit; }
+        .login-page { align-items: center; display: flex; justify-content: center; min-height: 100vh; padding: 36px; }
+        .login-card { background: #fff; border: 1px solid #e6ebf2; border-radius: 4px; box-shadow: 0 20px 70px #162a4814; display: grid; grid-template-columns: .92fr 1fr; max-width: 1240px; min-height: min(700px, calc(100vh - 72px)); overflow: hidden; width: 100%; }
+        .brand-panel { background: linear-gradient(142deg, #102b55, #142f5a 54%, #0d2344); color: #fff; display: flex; flex-direction: column; justify-content: space-between; min-height: 620px; overflow: hidden; padding: 28px 34px; position: relative; }
+        .brand-panel::before { background: linear-gradient(90deg, transparent 48%, #9fc0ef20 49%, #9fc0ef20 50%, transparent 51%), linear-gradient(0deg, transparent 48%, #9fc0ef1b 49%, #9fc0ef1b 50%, transparent 51%); background-size: 72px 72px; content: ""; inset: 0; opacity: .5; position: absolute; }
+        .brand-panel::after { background: linear-gradient(150deg, transparent 25%, #ffffff0a 25.2%, #ffffff0a 26%, transparent 26.2%), linear-gradient(30deg, transparent 59%, #ffffff10 59.2%, #ffffff10 59.8%, transparent 60%), radial-gradient(ellipse at 50% 50%, #5f8ad526, transparent 68%); content: ""; inset: 0; position: absolute; }
+        .brand-top, .brand-copy, .brand-bottom { position: relative; z-index: 1; }
+        .brand { align-items: center; color: #fff; display: inline-flex; font-size: 15px; font-weight: 800; gap: 9px; text-decoration: none; }
+        .brand-mark { align-items: center; background: #fff; border-radius: 7px; color: #2858dc; display: inline-flex; height: 28px; justify-content: center; width: 28px; }
+        .brand-mark svg { height: 17px; width: 17px; }
+        .brand-copy { margin: auto 0; max-width: 470px; padding: 56px 0; }
+        .eyebrow { color: #b9c9e3; font-size: 10px; font-weight: 700; letter-spacing: .08em; margin: 0 0 20px; text-transform: uppercase; }
+        .brand-copy h1 { font-size: clamp(30px, 3.4vw, 43px); letter-spacing: -.045em; line-height: 1.24; margin: 0; }
+        .brand-copy > p:last-child { color: #d1dbea; font-size: 14px; line-height: 1.7; margin: 17px 0 0; max-width: 390px; }
+        .stats { display: grid; gap: 20px; grid-template-columns: repeat(3, 1fr); margin-bottom: 26px; }
+        .stat strong { display: block; font-size: 23px; letter-spacing: -.03em; }
+        .stat span { color: #c4d0e2; display: block; font-size: 10px; margin-top: 5px; }
+        .brand-foot { border-top: 1px solid #ffffff24; color: #aebed6; font-size: 9px; letter-spacing: .07em; padding-top: 15px; }
+        .form-panel { display: flex; flex-direction: column; justify-content: space-between; padding: 25px clamp(34px, 6.4vw, 76px) 24px; }
+        .form-top { align-items: center; display: flex; justify-content: flex-end; }
+        .help-link { color: #7c8da6; font-size: 10px; text-decoration: none; }
+        .help-link:hover { color: #2858dc; }
+        .login-form-wrap { margin: 36px auto; max-width: 440px; width: 100%; }
+        .role-badge { background: #edf3ff; border-radius: 5px; color: #2858dc; display: inline-block; font-size: 9px; font-weight: 800; letter-spacing: .035em; padding: 6px 9px; }
+        .login-form-wrap h2 { color: #182f52; font-size: 27px; letter-spacing: -.035em; margin: 12px 0 6px; }
+        .intro { color: #8290a5; font-size: 12px; line-height: 1.6; margin: 0 0 25px; }
+        .field { margin-bottom: 16px; }
+        .field label { color: #283d5c; display: block; font-size: 11px; font-weight: 700; margin-bottom: 7px; }
+        .input-wrap { align-items: center; border: 1px solid #dce4ef; border-radius: 7px; display: flex; min-height: 43px; padding: 0 11px; transition: border-color .15s, box-shadow .15s; }
+        .input-wrap:focus-within { border-color: #7195eb; box-shadow: 0 0 0 3px #2858dc16; }
+        .input-wrap svg { color: #91a0b5; flex: 0 0 15px; height: 15px; width: 15px; }
+        .input-wrap input { background: transparent; border: 0; color: #243957; font-size: 12px; min-width: 0; outline: 0; padding: 10px 9px; width: 100%; }
+        .input-wrap input::placeholder { color: #a3afbf; }
+        .form-validation { color: #b42318; font-size: 11px; margin-top: 5px; }
+        .error-summary { background: #fff1f0; border: 1px solid #ffd8d5; border-radius: 7px; color: #a7362e; font-size: 11px; margin-bottom: 15px; padding: 10px 12px; }
+        .form-options { align-items: center; display: flex; justify-content: space-between; margin: 3px 0 18px; }
+        .remember { align-items: center; color: #64758d; display: inline-flex; font-size: 10px; gap: 7px; }
+        .remember input { accent-color: #2858dc; height: 14px; margin: 0; width: 14px; }
+        .forgot-link { color: #2858dc; font-size: 10px; font-weight: 700; text-decoration: none; }
+        .submit-button { align-items: center; background: #2858dc; border: 1px solid #2858dc; border-radius: 7px; color: white; cursor: pointer; display: flex; font-size: 12px; font-weight: 700; gap: 8px; justify-content: center; min-height: 43px; transition: background .15s; width: 100%; }
+        .submit-button:hover { background: #204bc2; }
+        .submit-button:focus-visible { outline: 3px solid #2858dc55; outline-offset: 2px; }
+        .submit-button svg { height: 15px; width: 15px; }
+        .secure-note { align-items: center; color: #8795a9; display: flex; font-size: 9px; gap: 6px; justify-content: center; margin: 14px 0 0; }
+        .secure-note svg { color: #29a27c; height: 13px; width: 13px; }
+        .form-footer { align-items: center; color: #98a5b6; display: flex; font-size: 9px; justify-content: space-between; }
+        .form-footer a { color: inherit; text-decoration: none; }
+        @@media (max-width: 760px) {
+            .login-page { padding: 16px; }
+            .login-card { grid-template-columns: 1fr; max-width: 520px; min-height: min(760px, calc(100vh - 32px)); }
+            .brand-panel { min-height: 225px; padding: 19px 22px; }
+            .brand-copy { margin: 28px 0 8px; padding: 0; }
+            .brand-copy h1 { font-size: 28px; }
+            .brand-copy > p:last-child { font-size: 12px; margin-top: 8px; }
+            .eyebrow { margin-bottom: 8px; }
+            .stats, .brand-foot { display: none; }
+            .form-panel { min-height: 430px; padding: 18px 24px 20px; }
+            .login-form-wrap { margin: 38px auto; }
+        }
+        @@media (max-width: 420px) {
+            .login-page { padding: 0; }
+            .login-card { border: 0; min-height: 100vh; }
+            .brand-panel { border-radius: 0; }
+            .form-panel { padding: 17px 20px; }
+            .form-options { align-items: flex-start; gap: 12px; }
+        }
+        @@media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after { scroll-behavior: auto !important; transition: none !important; }
+        }
+    </style>
+</head>
+<body>
+    <main class="login-page">
+        <section class="login-card" aria-label="Đăng nhập Readwise">
+            <aside class="brand-panel">
+                <div class="brand-top">
+                    <a class="brand" href="/" aria-label="Readwise - trang chủ">
+                        <span class="brand-mark" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" fill="none">
+                                <path d="M5 5.5h5.4a3 3 0 0 1 3 3v10H8a3 3 0 0 0-3 1.5v-14.5Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" />
+                                <path d="M19 5.5h-5.6a3 3 0 0 0-3 3v10H16a3 3 0 0 1 3 1.5v-14.5Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" />
+                            </svg>
+                        </span>
+                        <span>Readwise</span>
+                    </a>
+                </div>
+                <div class="brand-copy">
+                    <p class="eyebrow">Nền tảng đánh giá năng lực tiếng Anh</p>
+                    <h1>Mỗi bài thi tốt.<br />Một bước tiến xa.</h1>
+                    <p>Tạo đề, tổ chức ca thi và thấu hiểu kết quả học tập trong một không gian thống nhất.</p>
+                </div>
+                <div class="brand-bottom">
+                    <div class="stats" aria-label="Thông tin bài thi">
+                        <div class="stat"><strong>100</strong><span>câu Reading chuẩn</span></div>
+                        <div class="stat"><strong>75 phút</strong><span>mỗi bài thi</span></div>
+                        <div class="stat"><strong>3 phần</strong><span>Part 5 · 6 · 7</span></div>
+                    </div>
+                    <div class="brand-foot">READWISE FOR EDUCATION&nbsp; / &nbsp;ĐƯỢC THIẾT KẾ CHO GIẢNG DẠY</div>
+                </div>
+            </aside>
+            <section class="form-panel">
+                <div class="form-top">
+                    <span class="help-link">ⓘ &nbsp;Trung tâm trợ giúp</span>
+                </div>
+                <div class="login-form-wrap">
+                    <span class="role-badge">ADMIN / GIẢNG VIÊN</span>
+                    <h2>Chào mừng trở lại</h2>
+                    <p class="intro">Đăng nhập để quản lý đề thi và theo dõi tiến bộ của sinh viên.</p>
+                    <form asp-controller="Account" asp-action="Login" method="post">
+                        <input asp-for="ReturnUrl" type="hidden" />
+                        @if (loginErrors.Length > 0)
+                        {
+                            <div class="error-summary" role="alert">
+                                @foreach (var error in loginErrors)
+                                {
+                                    <div>@error</div>
+                                }
+                            </div>
+                        }
+                        <div class="field">
+                            <label asp-for="UserName"></label>
+                            <div class="input-wrap">
+                                <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                    <rect x="3.5" y="5.5" width="17" height="13" rx="2" stroke="currentColor" stroke-width="1.6" />
+                                    <path d="m5 7 7 5 7-5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+                                </svg>
+                                <input asp-for="UserName" autocomplete="username" placeholder="Nhập tên đăng nhập" autofocus />
+                            </div>
+                            <span asp-validation-for="UserName" class="form-validation"></span>
+                        </div>
+                        <div class="field">
+                            <label asp-for="Password"></label>
+                            <div class="input-wrap">
+                                <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                    <rect x="5" y="10" width="14" height="10" rx="2" stroke="currentColor" stroke-width="1.6" />
+                                    <path d="M8 10V7a4 4 0 1 1 8 0v3m-4 4v2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+                                </svg>
+                                <input asp-for="Password" autocomplete="current-password" placeholder="Nhập mật khẩu" />
+                            </div>
+                            <span asp-validation-for="Password" class="form-validation"></span>
+                        </div>
+                        <div class="form-options">
+                            <label class="remember"><input asp-for="RememberMe" /> Ghi nhớ đăng nhập</label>
+                            <span class="forgot-link" title="Liên hệ quản trị viên để đặt lại mật khẩu">Liên hệ quản trị viên</span>
+                        </div>
+                        <button class="submit-button" type="submit">
+                            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                <path d="M5 12h14m-6-6 6 6-6 6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" />
+                            </svg>
+                            Đăng nhập
+                        </button>
+                        <p class="secure-note">
+                            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                <path d="M12 3.5 19 6v5.2c0 4.3-2.9 7.6-7 9.3-4.1-1.7-7-5-7-9.3V6l7-2.5Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" />
+                                <path d="m9 12 2 2 4-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+                            </svg>
+                            Kết nối bảo mật&nbsp; • &nbsp;Chỉ dành cho tài khoản được cấp
+                        </p>
+                    </form>
+                </div>
+                <footer class="form-footer">
+                    <span>© 2026 Readwise Education</span>
+                    <span>Quyền riêng tư</span>
+                </footer>
+            </section>
+        </section>
+    </main>
+</body>
+</html>

@@ -1,0 +1,66 @@
+@model ExamQuestionReviewItem
+@{
+    var choices = new[] { Model.ChoiceA, Model.ChoiceB, Model.ChoiceC, Model.ChoiceD };
+}
+
+<article class="question-review">
+    <div class="question-review-title">
+        <strong>Câu @Model.Number</strong>
+        <span>Part @Model.Part</span>
+    </div>
+    <p class="question-prompt">@Model.Prompt</p>
+    <div class="answer-options">
+        @for (var index = 0; index < choices.Length; index++)
+        {
+            <div class="answer-option @(index == Model.CorrectAnswerIndex ? "correct" : "")">
+                <strong>@((char)('A' + index)).</strong>
+                <span>@choices[index]</span>
+                @if (index == Model.CorrectAnswerIndex)
+                {
+                    <span class="correct-label">Đáp án đúng</span>
+                }
+            </div>
+        }
+    </div>
+    @if (!string.IsNullOrWhiteSpace(Model.Hint))
+    {
+        <p class="question-explanation"><strong>Giải thích:</strong> @Model.Hint</p>
+    }
+    <details class="question-edit">
+        <summary>Chỉnh sửa câu hỏi và đáp án</summary>
+        <form asp-controller="InstructorExams"
+              asp-action="EditQuestion"
+              asp-route-id="@ViewData["ExamId"]"
+              asp-route-questionId="@Model.Id"
+              method="post">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="ExamId" value="@ViewData["ExamId"]" />
+            <input type="hidden" name="QuestionId" value="@Model.Id" />
+
+            <label for="prompt-@Model.Id">Nội dung câu hỏi</label>
+            <textarea id="prompt-@Model.Id" name="Prompt" maxlength="4000" required>@Model.Prompt</textarea>
+
+            @for (var index = 0; index < choices.Length; index++)
+            {
+                var letter = (char)('A' + index);
+                var fieldName = $"Choice{letter}";
+                <label for="@fieldName-@Model.Id">
+                    <input type="radio"
+                           name="CorrectAnswerIndex"
+                           value="@index"
+                           checked="@(index == Model.CorrectAnswerIndex)" />
+                    Đáp án @letter
+                </label>
+                <input id="@fieldName-@Model.Id"
+                       name="@fieldName"
+                       maxlength="1000"
+                       value="@choices[index]"
+                       required />
+            }
+
+            <label for="hint-@Model.Id">Giải thích (không bắt buộc)</label>
+            <textarea id="hint-@Model.Id" name="Hint" maxlength="4000">@Model.Hint</textarea>
+            <button class="button button-secondary" type="submit">Lưu câu hỏi</button>
+        </form>
+    </details>
+</article>

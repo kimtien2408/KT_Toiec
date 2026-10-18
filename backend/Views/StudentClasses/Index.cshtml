@@ -1,0 +1,76 @@
+@model IReadOnlyList<StudentClassListItem>
+@{
+    ViewData["Title"] = "Sinh viên";
+}
+
+<div class="page-heading">
+    <div>
+        <h1>Quản lý lớp học</h1>
+        <p>Tạo lớp, theo dõi sĩ số và quản lý danh sách sinh viên.</p>
+    </div>
+    <a class="button" asp-controller="StudentClasses" asp-action="Create">＋ Tạo lớp mới</a>
+</div>
+
+@if (TempData["StatusMessage"] is string statusMessage)
+{
+    <div class="notice" role="status">@statusMessage</div>
+}
+
+<div class="table-toolbar card" style="margin-bottom:16px">
+    <label class="search-box">
+        <span aria-hidden="true">⌕</span>
+        <input id="class-search" type="search" placeholder="Tìm theo tên hoặc mã lớp..." aria-label="Tìm lớp học" />
+    </label>
+    <span class="stat-foot">@Model.Count lớp học</span>
+</div>
+
+@if (Model.Count == 0)
+{
+    <section class="card empty-state">
+        <strong>Chưa có lớp học nào</strong>
+        <p>Tạo lớp mới để bắt đầu thêm sinh viên vào danh sách.</p>
+        <a class="button" asp-controller="StudentClasses" asp-action="Create">＋ Tạo lớp mới</a>
+    </section>
+}
+else
+{
+    <section class="class-grid" id="class-grid">
+        @foreach (var studentClass in Model)
+        {
+            <a class="card class-card"
+               asp-controller="StudentClasses"
+               asp-action="Details"
+               asp-route-id="@studentClass.Id"
+               data-search="@studentClass.Name.ToLowerInvariant() @studentClass.Code.ToLowerInvariant()">
+                <div class="class-card-top">
+                    <span class="class-mark" aria-hidden="true">▱</span>
+                    <div>
+                        <div class="class-title">@studentClass.Name</div>
+                        <div class="class-code">@studentClass.Code</div>
+                    </div>
+                </div>
+                <div class="class-card-meta">
+                    <span>♙ @studentClass.StudentCount sinh viên</span>
+                    <span>@(studentClass.AcademicYear ?? "Chưa có năm học")</span>
+                </div>
+            </a>
+        }
+    </section>
+    <div class="empty-state" id="class-empty" hidden>Không tìm thấy lớp phù hợp.</div>
+}
+
+<script>
+    const search = document.getElementById('class-search');
+    const cards = [...document.querySelectorAll('#class-grid [data-search]')];
+    const empty = document.getElementById('class-empty');
+    search?.addEventListener('input', () => {
+        const query = search.value.trim().toLocaleLowerCase('vi');
+        let visible = 0;
+        for (const card of cards) {
+            const matches = card.dataset.search.includes(query);
+            card.hidden = !matches;
+            if (matches) visible++;
+        }
+        if (empty) empty.hidden = visible !== 0;
+    });
+</script>

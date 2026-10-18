@@ -1,0 +1,38 @@
+@model CreateStudentClassViewModel
+@{
+    ViewData["Title"] = "Tạo lớp mới";
+}
+
+<div class="page-heading">
+    <div>
+        <h1>Tạo lớp mới</h1>
+        <p>Nhập thông tin lớp học trước khi thêm sinh viên.</p>
+    </div>
+    <a class="button button-secondary" asp-controller="StudentClasses" asp-action="Index">← Danh sách lớp</a>
+</div>
+
+<section class="card panel" style="max-width:700px">
+    <form asp-controller="StudentClasses" asp-action="Create" method="post">
+        @Html.AntiForgeryToken()
+        <div asp-validation-summary="ModelOnly" class="validation" role="alert"></div>
+        <div class="field">
+            <label asp-for="Name"></label>
+            <input asp-for="Name" placeholder="Ví dụ: TOEIC Reading 23DTHD5" />
+            <span asp-validation-for="Name" class="validation"></span>
+        </div>
+        <div class="field">
+            <label asp-for="Code"></label>
+            <input asp-for="Code" placeholder="Ví dụ: 23DTHD5" autocomplete="off" />
+            <span asp-validation-for="Code" class="validation"></span>
+        </div>
+        <div class="field">
+            <label asp-for="AcademicYear"></label>
+            <input asp-for="AcademicYear" placeholder="Ví dụ: 2026–2027" />
+            <span asp-validation-for="AcademicYear" class="validation"></span>
+        </div>
+        <div class="actions">
+            <button class="button" type="submit">Tạo lớp</button>
+            <a class="button button-secondary" asp-controller="StudentClasses" asp-action="Index">Hủy</a>
+        </div>
+    </form>
+</section>

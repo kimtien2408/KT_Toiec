@@ -1,0 +1,100 @@
+@model StudentClassDetailsViewModel
+@{
+    ViewData["Title"] = "Danh sách sinh viên";
+}
+
+<div class="page-heading">
+    <div>
+        <h1>@Model.Class.Name</h1>
+        <p>Mã lớp @Model.Class.Code · @(Model.Class.AcademicYear ?? "Chưa có năm học")</p>
+    </div>
+    <a class="button button-secondary" asp-controller="StudentClasses" asp-action="Index">← Danh sách lớp</a>
+</div>
+
+@if (TempData["StatusMessage"] is string statusMessage)
+{
+    <div class="notice" role="status">@statusMessage</div>
+}
+@if (TempData["ErrorMessage"] is string errorMessage)
+{
+    <div class="notice warning" role="alert">@errorMessage</div>
+}
+
+<section class="stats-grid" style="grid-template-columns:repeat(2,minmax(0,1fr))">
+    <article class="card stat-card">
+        <div class="stat-label">Tổng sinh viên</div>
+        <div class="stat-value">@Model.Students.Count</div>
+        <div class="stat-foot">Sinh viên trong lớp @Model.Class.Code</div>
+    </article>
+    <article class="card stat-card">
+        <div class="stat-label">Ngày tạo lớp</div>
+        <div class="stat-value" style="font-size:22px">@Model.Class.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy")</div>
+        <div class="stat-foot">Mã lớp @Model.Class.Code</div>
+    </article>
+</section>
+
+<div class="student-layout">
+    <section class="card table-card">
+        <div class="table-toolbar">
+            <div>
+                <h2 style="color:#203453;font-size:15px;margin:0 0 4px">Danh sách sinh viên</h2>
+                <span class="stat-foot">@Model.Students.Count sinh viên</span>
+            </div>
+        </div>
+        @if (Model.Students.Count == 0)
+        {
+            <div class="empty-state">Lớp chưa có sinh viên. Thêm sinh viên bằng biểu mẫu bên cạnh.</div>
+        }
+        else
+        {
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Mã sinh viên</th>
+                            <th>Họ và tên</th>
+                            <th>Email</th>
+                            <th>Ngày thêm</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @for (var index = 0; index < Model.Students.Count; index++)
+                        {
+                            var student = Model.Students[index];
+                            <tr>
+                                <td>@(index + 1)</td>
+                                <td class="student-code">@student.StudentCode</td>
+                                <td>@student.FullName</td>
+                                <td>@(student.Email ?? "—")</td>
+                                <td>@student.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </section>
+
+    <aside class="card panel">
+        <h2>Thêm sinh viên</h2>
+        <p class="panel-subtitle">Sinh viên sẽ được thêm vào lớp @Model.Class.Code.</p>
+        <form asp-controller="StudentClasses" asp-action="AddStudent" asp-route-id="@Model.Class.Id" method="post">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="ClassId" value="@Model.Class.Id" />
+            <div class="field">
+                <label for="StudentCode">Mã sinh viên</label>
+                <input id="StudentCode" name="StudentCode" maxlength="30" required placeholder="Ví dụ: 2380600057" />
+            </div>
+            <div class="field">
+                <label for="FullName">Họ tên sinh viên</label>
+                <input id="FullName" name="FullName" maxlength="120" required placeholder="Nguyễn Văn A" />
+            </div>
+            <div class="field">
+                <label for="Email">Email (không bắt buộc)</label>
+                <input id="Email" name="Email" type="email" maxlength="254" placeholder="sinhvien@example.com" />
+            </div>
+            <button class="button" type="submit">＋ Thêm vào lớp</button>
+        </form>
+    </aside>
+</div>

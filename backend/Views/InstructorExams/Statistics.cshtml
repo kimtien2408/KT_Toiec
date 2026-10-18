@@ -1,0 +1,81 @@
+@model InstructorStatisticsViewModel
+@{
+    ViewData["Title"] = "Thống kê";
+}
+
+<div class="page-heading">
+    <div>
+        <h1>Thống kê kết quả thi</h1>
+        <p>Tổng hợp lượt làm bài và những câu hỏi có tỷ lệ trả lời sai cao nhất.</p>
+    </div>
+    <a class="button button-secondary" asp-controller="InstructorExams" asp-action="Index">← Quản lý đề thi</a>
+</div>
+
+<section class="metric-row" aria-label="Chỉ số kết quả">
+    <article class="card stat-card">
+        <div class="stat-label">Lượt thi đã hoàn thành</div>
+        <div class="stat-value">@Model.AttemptCount</div>
+        <div class="stat-foot">Từ dữ liệu bài làm đã nộp</div>
+    </article>
+    <article class="card stat-card">
+        <div class="stat-label">Độ chính xác trung bình</div>
+        <div class="stat-value">@Model.AverageAccuracy.ToString("0.#")%</div>
+        <div class="stat-foot">Trung bình số câu đúng mỗi lượt thi</div>
+    </article>
+    <article class="card stat-card">
+        <div class="stat-label">Câu hỏi cần lưu ý</div>
+        <div class="stat-value">@Model.TopMisses.Count</div>
+        <div class="stat-foot">Câu có lượt trả lời sai trong dữ liệu</div>
+    </article>
+</section>
+
+<section class="card table-card">
+    <div class="table-toolbar">
+        <div>
+            <h2 style="color:#203453;font-size:15px;margin:0 0 4px">Top 10 câu sai nhiều nhất</h2>
+            <span class="stat-foot">Xếp hạng theo số lượt trả lời sai</span>
+        </div>
+        <span class="badge draft">@Model.AttemptCount lượt thi</span>
+    </div>
+    @if (Model.TopMisses.Count == 0)
+    {
+        <div class="empty-state">
+            Chưa có dữ liệu bài thi để tính thống kê.
+            <p>Số liệu sẽ xuất hiện sau khi sinh viên nộp bài.</p>
+        </div>
+    }
+    else
+    {
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Hạng</th>
+                        <th>Câu hỏi</th>
+                        <th>Phần</th>
+                        <th>Nội dung</th>
+                        <th>Số lượt sai</th>
+                        <th>Tỷ lệ sai</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @for (var index = 0; index < Model.TopMisses.Count; index++)
+                    {
+                        var question = Model.TopMisses[index];
+                        var errorRate = question.AttemptCount == 0
+                            ? 0
+                            : Math.Round(question.IncorrectCount * 100d / question.AttemptCount);
+                        <tr>
+                            <td class="top-miss">@((index + 1).ToString("00"))</td>
+                            <td>Câu @question.Number</td>
+                            <td>Part @question.Part</td>
+                            <td>@question.Prompt</td>
+                            <td>@question.IncorrectCount</td>
+                            <td><span class="top-miss">@errorRate%</span></td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</section>

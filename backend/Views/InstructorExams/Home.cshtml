@@ -1,0 +1,42 @@
+@model InstructorHomeViewModel
+@{
+    ViewData["Title"] = "Tổng quan";
+}
+
+<section class="welcome-banner">
+    <h1>Chào mừng trở lại, Giảng viên 👋</h1>
+    <p>Quản lý hệ thống học tập của bạn một cách hiệu quả.</p>
+</section>
+
+<h2 class="section-title">Quản lý học tập</h2>
+<section class="learning-cards" aria-label="Lối tắt quản lý học tập">
+    <a class="card learning-card" asp-controller="InstructorExams" asp-action="Import">
+        <span class="learning-icon" aria-hidden="true">
+            <svg viewBox="0 0 32 32" focusable="false">
+                <path d="M9 4.75h9l6 6V26a1.25 1.25 0 0 1-1.25 1.25H9A1.25 1.25 0 0 1 7.75 26V6A1.25 1.25 0 0 1 9 4.75Z" />
+                <path d="M18 5v6h6M12 16h8M12 20h8" />
+            </svg>
+        </span>
+        <strong>Bài tập</strong>
+        <span>Tạo bài thi Reading từ tài liệu Word</span>
+    </a>
+    <a class="card learning-card" asp-controller="InstructorExams" asp-action="Index">
+        <span class="learning-icon" aria-hidden="true">
+            <svg viewBox="0 0 32 32" focusable="false">
+                <path d="M5.5 9.25A2.25 2.25 0 0 1 7.75 7h6l2.5 2.75h8A2.25 2.25 0 0 1 26.5 12v12a2.25 2.25 0 0 1-2.25 2.25H7.75A2.25 2.25 0 0 1 5.5 24Z" />
+                <path d="M5.75 12.5h20" />
+            </svg>
+        </span>
+        <strong>Đề thi</strong>
+        <span>@Model.ExamCount đề · @Model.PublishedExamCount đã xuất bản</span>
+    </a>
+    <a class="card learning-card" asp-controller="StudentClasses" asp-action="Index">
+        <span class="learning-icon" aria-hidden="true">
+            <svg viewBox="0 0 32 32" focusable="false">
+                <path d="m16 4.75 11 5.25-11 5.25L5 10Zm-11 11 11 5.25 11-5.25M5 21l11 5.25L27 21" />
+            </svg>
+        </span>
+        <strong>Quản lý lớp</strong>
+        <span>@Model.ClassCount lớp · @Model.StudentCount sinh viên</span>
+    </a>
+</section>

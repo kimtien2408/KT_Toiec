@@ -1,0 +1,344 @@
+@model EditExamViewModel
+@{
+    ViewData["Title"] = "Chỉnh sửa và xem trước đề thi";
+    ViewData["ExamId"] = Model.Id;
+    var selectedQuestion = Model.SelectedQuestion;
+}
+
+<div class="exam-editor-heading">
+    <div>
+        <h1>@Model.Title</h1>
+        <p>@Model.Questions.Count câu <span>·</span> @Model.DurationMinutes phút <span>·</span> @(Model.IsPublished ? "Đã xuất bản" : "Bản nháp")</p>
+    </div>
+    <div class="exam-editor-actions">
+        <a class="button button-secondary" asp-controller="InstructorExams" asp-action="Index">Danh sách đề</a>
+        @if (Model.IsPublished)
+        {
+            <form asp-controller="InstructorExams" asp-action="Unpublish" asp-route-id="@Model.Id" method="post">
+                @Html.AntiForgeryToken()
+                <button class="button button-secondary" type="submit">Chuyển về bản nháp</button>
+            </form>
+        }
+        else
+        {
+            <form asp-controller="InstructorExams" asp-action="Publish" asp-route-id="@Model.Id" method="post">
+                @Html.AntiForgeryToken()
+                <button class="button"
+                        type="submit"
+                        disabled="@(!Model.CanPublish)"
+                        title="@(Model.CanPublish ? "Xuất bản đề thi cho sinh viên" : "Hoàn tất các điều kiện bên dưới để xuất bản")">
+                    <span aria-hidden="true">➤</span> Xuất bản
+                </button>
+            </form>
+        }
+        <button class="button button-secondary" type="submit" form="exam-details-form">Lưu thông tin đề</button>
+    </div>
+</div>
+
+@if (TempData["StatusMessage"] is string statusMessage)
+{
+    <div class="notice @(statusMessage.StartsWith("Không", StringComparison.Ordinal) ? "warning" : "")" role="status">@statusMessage</div>
+}
+
+<div class="exam-editor-layout">
+    <aside class="card question-sidebar" aria-label="Cấu trúc đề thi">
+        <h2>Cấu trúc đề thi</h2>
+        @if (Model.Questions.Count == 0)
+        {
+            <p class="editor-muted">Đề chưa có câu hỏi.</p>
+        }
+        else
+        {
+            @foreach (var part in Model.QuestionParts)
+            {
+                <section class="part-navigation">
+                    <div class="part-navigation-heading">
+                        <strong>Part @part.Key</strong>
+                        <span>@part.Count() câu</span>
+                    </div>
+                    <nav aria-label="Câu hỏi Part @part.Key">
+                        @foreach (var question in part)
+                        {
+                            <a class="question-navigation-link @(selectedQuestion?.Id == question.Id ? "active" : "")"
+                               asp-controller="InstructorExams"
+                               asp-action="Edit"
+                               asp-route-id="@Model.Id"
+                               asp-route-questionId="@question.Id"
+                               aria-current="@(selectedQuestion?.Id == question.Id ? "page" : null)">
+                                <span>Câu @question.Number</span>
+                                <span class="question-navigation-status @(question.CorrectAnswerIndex is >= 0 and <= 3 ? "valid" : "invalid")"
+                                      aria-label="@(question.CorrectAnswerIndex is >= 0 and <= 3 ? "Có đáp án đúng" : "Thiếu đáp án đúng")">
+                                    @(question.CorrectAnswerIndex is >= 0 and <= 3 ? "✓" : "!")
+                                </span>
+                            </a>
+                        }
+                    </nav>
+                </section>
+            }
+        }
+        <div class="question-count-badge">✓ @Model.Questions.Count câu hỏi</div>
+    </aside>
+
+    <div class="exam-editor-content">
+        @if (selectedQuestion is null)
+        {
+            <section class="card editor-empty-state">
+                <div class="editor-empty-icon">▤</div>
+                <h2>Chưa có nội dung đề thi</h2>
+                <p>Thêm đề thi bằng cách tải tài liệu DOCX, sau đó quay lại đây để chỉnh sửa.</p>
+                <a class="button" asp-controller="InstructorExams" asp-action="Import">Tải tài liệu DOCX</a>
+            </section>
+        }
+        else
+        {
+            @if (selectedQuestion.PassageId is not null)
+            {
+                <section class="card passage-editor-card">
+                    <div class="editor-card-heading">
+                        <div>
+                            <span class="editor-eyebrow">BÀI ĐỌC · PART @selectedQuestion.Part</span>
+                            <h2>Bài đọc · Câu @selectedQuestion.Number</h2>
+                        </div>
+                        <span class="editor-state-badge">Đang chỉnh sửa</span>
+                    </div>
+                    <form asp-controller="InstructorExams"
+                          asp-action="EditPassage"
+                          asp-route-id="@Model.Id"
+                          asp-route-passageId="@selectedQuestion.PassageId"
+                          method="post"
+                          class="passage-edit-form">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="ExamId" value="@Model.Id" />
+                        <input type="hidden" name="PassageId" value="@selectedQuestion.PassageId" />
+                        <input type="hidden" name="SelectedQuestionId" value="@selectedQuestion.Id" />
+                        <label for="passage-content">Nội dung đoạn đọc</label>
+                        <textarea id="passage-content"
+                                  name="Content"
+                                  maxlength="20000"
+                                  required>@selectedQuestion.PassageContent</textarea>
+                        <div class="editor-form-actions">
+                            <span class="editor-muted">Thay đổi đoạn đọc sẽ áp dụng cho các câu cùng bài đọc.</span>
+                            <button class="button button-secondary" type="submit">Lưu đoạn đọc</button>
+                        </div>
+                    </form>
+                </section>
+            }
+
+            <section class="card question-editor-card">
+                <div class="editor-card-heading">
+                    <div class="question-heading-label">
+                        <span class="part-badge">PART @selectedQuestion.Part</span>
+                        <span class="editor-muted">Câu @selectedQuestion.Number</span>
+                    </div>
+                    <span class="editor-state-badge">Chỉnh sửa</span>
+                </div>
+                @await Html.PartialAsync("_QuestionReview", selectedQuestion)
+            </section>
+        }
+    </div>
+
+    <aside class="exam-settings-column">
+        <section class="card exam-settings-card">
+            <h2>Cấu hình ca thi</h2>
+            <p class="editor-muted">Tạo trước một hoặc nhiều ca để sinh viên chọn khi bắt đầu thi.</p>
+            @foreach (var session in Model.Sessions)
+            {
+                <div class="exam-session-editor">
+                    <form asp-controller="InstructorExams"
+                          asp-action="UpdateSession"
+                          asp-route-id="@Model.Id"
+                          asp-route-sessionId="@session.Id"
+                          method="post">
+                        @Html.AntiForgeryToken()
+                        <fieldset class="session-shift-field">
+                            <legend>Ca thi</legend>
+                            <div class="session-shift-options">
+                                <label class="session-shift-option">
+                                    @if (session.Shift == "Morning")
+                                    {
+                                        <input type="radio" name="Shift" value="Morning" checked />
+                                    }
+                                    else
+                                    {
+                                        <input type="radio" name="Shift" value="Morning" />
+                                    }
+                                    <span aria-hidden="true">☀</span> Sáng
+                                </label>
+                                <label class="session-shift-option">
+                                    @if (session.Shift == "Afternoon")
+                                    {
+                                        <input type="radio" name="Shift" value="Afternoon" checked />
+                                    }
+                                    else
+                                    {
+                                        <input type="radio" name="Shift" value="Afternoon" />
+                                    }
+                                    <span aria-hidden="true">☾</span> Chiều
+                                </label>
+                            </div>
+                        </fieldset>
+                        <div class="field session-date-field">
+                            <label for="session-date-@session.Id">Ngày tổ chức</label>
+                            <input id="session-date-@session.Id"
+                                   name="SessionDate"
+                                   type="date"
+                                   required
+                                   value="@session.SessionDate?.ToString("yyyy-MM-dd")" />
+                        </div>
+                        <div class="session-time-fields">
+                            <div class="field">
+                                <label for="session-start-@session.Id">Bắt đầu</label>
+                                <input id="session-start-@session.Id"
+                                       name="SessionStart"
+                                       type="time"
+                                       required
+                                       value="@session.SessionStart?.ToString(@"hh\:mm")" />
+                            </div>
+                            <div class="field">
+                                <label for="session-end-@session.Id">Kết thúc</label>
+                                <input id="session-end-@session.Id"
+                                       name="SessionEnd"
+                                       type="time"
+                                       required
+                                       value="@session.SessionEnd?.ToString(@"hh\:mm")" />
+                            </div>
+                        </div>
+                        <div class="field session-code-field">
+                            <label for="session-code-@session.Id">Mã ca thi (không bắt buộc)</label>
+                            <input id="session-code-@session.Id"
+                                   name="SessionCode"
+                                   type="text"
+                                   maxlength="30"
+                                   autocomplete="off"
+                                   value="@session.SessionCode"
+                                   placeholder="Ví dụ: SANG20" />
+                            <span class="editor-muted">Sinh viên cần nhập mã này trước khi bắt đầu làm bài.</span>
+                        </div>
+                        @if (session.AttemptCount > 0)
+                        {
+                            <p class="editor-muted">Đã có @session.AttemptCount lượt thi; không thể sửa hoặc xóa ca này.</p>
+                        }
+                        else
+                        {
+                            <div class="editor-form-actions">
+                                <button class="button button-secondary" type="submit">Lưu ca thi</button>
+                            </div>
+                        }
+                    </form>
+                    @if (session.AttemptCount == 0)
+                    {
+                        <form asp-controller="InstructorExams"
+                              asp-action="DeleteSession"
+                              asp-route-id="@Model.Id"
+                              asp-route-sessionId="@session.Id"
+                              method="post">
+                            @Html.AntiForgeryToken()
+                            <button class="button button-secondary" type="submit">Xóa ca</button>
+                        </form>
+                    }
+                    else
+                    {
+                        <p class="editor-muted">Ca đã có lượt thi nên không thể xóa.</p>
+                    }
+                </div>
+            }
+            <form class="exam-session-editor"
+                  asp-controller="InstructorExams"
+                  asp-action="AddSession"
+                  asp-route-id="@Model.Id"
+                  method="post">
+                @Html.AntiForgeryToken()
+                <h3>Thêm ca mới</h3>
+                <fieldset class="session-shift-field">
+                    <legend>Ca thi</legend>
+                    <div class="session-shift-options">
+                        <label class="session-shift-option">
+                            <input type="radio" name="Shift" value="Morning" checked />
+                            <span aria-hidden="true">☀</span> Sáng
+                        </label>
+                        <label class="session-shift-option">
+                            <input type="radio" name="Shift" value="Afternoon" />
+                            <span aria-hidden="true">☾</span> Chiều
+                        </label>
+                    </div>
+                </fieldset>
+                <div class="field session-date-field">
+                    <label for="new-session-date">Ngày tổ chức</label>
+                    <input id="new-session-date" name="SessionDate" type="date" required />
+                </div>
+                <div class="session-time-fields">
+                    <div class="field">
+                        <label for="new-session-start">Bắt đầu</label>
+                        <input id="new-session-start" name="SessionStart" type="time" required />
+                    </div>
+                    <div class="field">
+                        <label for="new-session-end">Kết thúc</label>
+                        <input id="new-session-end" name="SessionEnd" type="time" required />
+                    </div>
+                </div>
+                <div class="field session-code-field">
+                    <label for="new-session-code">Mã ca thi (không bắt buộc)</label>
+                    <input id="new-session-code"
+                           name="SessionCode"
+                           type="text"
+                           maxlength="30"
+                           autocomplete="off"
+                           placeholder="Ví dụ: SANG20" />
+                    <span class="editor-muted">Sinh viên cần nhập mã này trước khi bắt đầu làm bài.</span>
+                </div>
+                <div class="editor-form-actions">
+                    <button class="button" type="submit">＋ Thêm ca thi</button>
+                </div>
+            </form>
+        </section>
+
+        <section class="card exam-settings-card">
+            <h2>Thông tin đề thi</h2>
+            <form id="exam-details-form" asp-controller="InstructorExams" asp-action="Edit" asp-route-id="@Model.Id" method="post">
+                @Html.AntiForgeryToken()
+                <input asp-for="Id" type="hidden" />
+                @if (selectedQuestion is not null)
+                {
+                    <input asp-for="SelectedQuestionId" type="hidden" value="@selectedQuestion.Id" />
+                }
+                <div asp-validation-summary="ModelOnly" class="validation" role="alert"></div>
+                <div class="field">
+                    <label asp-for="Title">Tên đề thi</label>
+                    <input asp-for="Title" />
+                    <span asp-validation-for="Title" class="validation"></span>
+                </div>
+                <div class="field">
+                    <label asp-for="DurationMinutes">Thời gian làm bài (phút)</label>
+                    <input asp-for="DurationMinutes" min="1" max="300" />
+                    <span asp-validation-for="DurationMinutes" class="validation"></span>
+                </div>
+            </form>
+        </section>
+
+        <section class="card publish-readiness-card">
+            <h2>@(Model.IsPublished ? "Trạng thái xuất bản" : "Sẵn sàng xuất bản")</h2>
+            @if (Model.IsPublished)
+            {
+                <p class="readiness-item is-ready"><span>✓</span> Đề đang hiển thị cho sinh viên</p>
+                <p class="readiness-item"><span>•</span> @Model.Questions.Count câu hỏi</p>
+            }
+            else if (Model.CanPublish)
+            {
+                <p class="readiness-item is-ready"><span>✓</span> Nội dung và đáp án hợp lệ</p>
+                <p class="readiness-item is-ready"><span>✓</span> Có @Model.Questions.Count câu hỏi</p>
+                <p class="readiness-item is-ready"><span>✓</span> Có thể xuất bản đề thi</p>
+            }
+            else
+            {
+                <p class="readiness-summary">Hoàn tất các mục sau để xuất bản:</p>
+                <ul class="readiness-issues">
+                    @foreach (var issue in Model.PublicationIssues)
+                    {
+                        <li>@issue</li>
+                    }
+                </ul>
+            }
+            <p class="editor-muted answer-privacy-note">Đáp án đúng chỉ hiển thị với giảng viên và được dùng để chấm bài.</p>
+        </section>
+    </aside>
+</div>

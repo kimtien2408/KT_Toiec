@@ -1,0 +1,200 @@
+@model InstructorDashboardViewModel
+@{
+    ViewData["Title"] = "Quản lý đề thi";
+}
+
+<div class="page-heading">
+    <div>
+        <h1>Quản lý đề thi</h1>
+        <p>Tổ chức ngân hàng đề Reading và quản lý các ca thi của bạn.</p>
+    </div>
+    <a class="button" asp-controller="InstructorExams" asp-action="Import">＋ Tạo đề mới</a>
+</div>
+
+@if (TempData["StatusMessage"] is string statusMessage)
+{
+    <div class="notice" role="status">@statusMessage</div>
+}
+
+<section class="stats-grid" aria-label="Tổng quan đề thi">
+    <article class="card stat-card">
+        <div class="stat-label">Tổng số đề</div>
+        <div class="stat-value">@Model.Exams.Count</div>
+        <div class="stat-foot">Đề trong ngân hàng của bạn</div>
+    </article>
+    <article class="card stat-card">
+        <div class="stat-label">Đã xuất bản</div>
+        <div class="stat-value">@Model.PublishedCount.ToString("00")</div>
+        <div class="stat-foot">Có thể hiển thị cho sinh viên</div>
+    </article>
+    <article class="card stat-card">
+        <div class="stat-label">Bản nháp</div>
+        <div class="stat-value">@Model.DraftCount.ToString("00")</div>
+        <div class="stat-foot">Đang chờ chỉnh sửa nội dung</div>
+    </article>
+    <article class="card stat-card">
+        <div class="stat-label">Cần chỉnh sửa</div>
+        <div class="stat-value">@Model.NeedsReviewCount.ToString("00")</div>
+        <div class="stat-foot">Đề chưa có câu hỏi</div>
+    </article>
+</section>
+
+<section class="card table-card">
+    <div class="table-toolbar">
+        <label class="search-box">
+            <span aria-hidden="true">⌕</span>
+            <input id="exam-search" type="search" placeholder="Tìm theo tên hoặc mã đề thi..." aria-label="Tìm đề thi" />
+        </label>
+        <span class="stat-foot">@Model.Exams.Count đề thi</span>
+    </div>
+    @if (Model.Exams.Count == 0)
+    {
+        <div class="empty-state">
+            <strong>Chưa có đề thi nào</strong>
+            <p>Tạo đề mới bằng cách tải lên tài liệu TOEIC Reading.</p>
+            <a class="button" asp-controller="InstructorExams" asp-action="Import">＋ Tạo đề mới</a>
+        </div>
+    }
+    else
+    {
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Tên đề thi</th>
+                        <th>Số câu</th>
+                        <th>Ca thi</th>
+                        <th>Trạng thái</th>
+                        <th>Kích hoạt ca thi</th>
+                        <th>Lượt thi</th>
+                        <th>Cập nhật</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody id="exam-rows">
+                    @foreach (var exam in Model.Exams)
+                    {
+                        <tr data-search="@exam.Title.ToLowerInvariant() @exam.Id.ToString("N")">
+                            <td>
+                                <div class="exam-name">@exam.Title</div>
+                                <div class="exam-code">RD-@(exam.Id.ToString("N")[..6].ToUpperInvariant()) · @exam.DurationMinutes phút</div>
+                            </td>
+                            <td>@exam.QuestionCount                            </td>
+                            <td>
+                                @if (exam.SessionCount > 0)
+                                {
+                                    <div>@exam.SessionCount ca đã cấu hình</div>
+                                }
+                                else
+                                {
+                                    <span class="session-unavailable">Chưa cấu hình</span>
+                                }
+                            </td>
+                            <td>
+                                @if (exam.QuestionCount == 0)
+                                {
+                                    <span class="badge review">Cần chỉnh sửa</span>
+                                }
+                                else if (exam.IsPublished)
+                                {
+                                    <span class="badge published">Đã xuất bản</span>
+                                }
+                                else
+                                {
+                                    <span class="badge draft">Bản nháp</span>
+                                }
+                            </td>
+                            <td>
+                                @if (exam.IsPublished)
+                                {
+                                    <form class="session-toggle-form"
+                                          asp-controller="InstructorExams"
+                                          asp-action="SetSessionActive"
+                                          asp-route-id="@exam.Id"
+                                          method="post">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden"
+                                               name="isActive"
+                                               value="@(exam.IsSessionActive ? "false" : "true")" />
+                                        <button class="session-toggle @(exam.IsSessionActive ? "is-active" : "")"
+                                                type="submit"
+                                                role="switch"
+                                                aria-checked="@exam.IsSessionActive"
+                                                aria-label="@(exam.IsSessionActive ? $"Tắt ca thi {exam.Title}" : $"Bật ca thi {exam.Title}")"
+                                                title="@(exam.IsSessionActive
+                                                    ? "Đang hiển thị cho sinh viên. Bấm để tắt."
+                                                    : exam.SessionCount > 0
+                                                        ? "Bấm để hiển thị đề và các ca thi cho sinh viên."
+                                                        : "Cần tạo ít nhất một ca hợp lệ trước khi bật.")">
+                                            <span class="session-toggle-track"><span></span></span>
+                                            <span>@(exam.IsSessionActive ? "Đang hiển thị" : "Chưa hiển thị")</span>
+                                        </button>
+                                    </form>
+                                }
+                                else
+                                {
+                                    <span class="session-unavailable" title="Xuất bản đề trước khi hiển thị cho sinh viên">Chưa xuất bản</span>
+                                }
+                            </td>
+                            <td>@exam.AttemptCount</td>
+                            <td>@exam.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy")</td>
+                            <td>
+                                <a class="button button-secondary"
+                                   asp-controller="InstructorExams"
+                                   asp-action="Edit"
+                                   asp-route-id="@exam.Id">Chỉnh sửa / xuất bản</a>
+                                @if (!exam.IsPublished && exam.AttemptCount == 0)
+                                {
+                                    <form class="draft-delete-form"
+                                          asp-controller="InstructorExams"
+                                          asp-action="DeleteDraft"
+                                          asp-route-id="@exam.Id"
+                                          data-draft-delete
+                                          data-exam-title="@exam.Title"
+                                          method="post">
+                                        @Html.AntiForgeryToken()
+                                        <button class="button button-danger" type="submit">Xóa bản nháp</button>
+                                    </form>
+                                }
+                                else if (!exam.IsPublished)
+                                {
+                                    <button class="button button-danger"
+                                            type="button"
+                                            disabled
+                                            title="Không thể xóa bản nháp đã có lượt thi">
+                                        Xóa bản nháp
+                                    </button>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+        <div class="table-footer" id="exam-count">Đang hiển thị @Model.Exams.Count đề thi</div>
+    }
+</section>
+
+<script>
+    const search = document.getElementById('exam-search');
+    const rows = [...document.querySelectorAll('#exam-rows tr')];
+    document.querySelectorAll('[data-draft-delete]').forEach(form => {
+        form.addEventListener('submit', event => {
+            const title = form.dataset.examTitle;
+            if (!window.confirm(`Bạn có chắc muốn xóa bản nháp "${title}"? Thao tác này không thể hoàn tác.`)) {
+                event.preventDefault();
+            }
+        });
+    });
+    search?.addEventListener('input', () => {
+        const query = search.value.trim().toLocaleLowerCase('vi');
+        let visible = 0;
+        for (const row of rows) {
+            const matches = row.dataset.search.includes(query);
+            row.hidden = !matches;
+            if (matches) visible++;
+        }
+        const count = document.getElementById('exam-count');
+        if (count) count.textContent = `Đang hiển thị ${visible} / ${rows.length} đề thi`;
+    });
+</script>

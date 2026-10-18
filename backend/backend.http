@@ -1,0 +1,15 @@
+@backend_HostAddress = http://localhost:5087
+
+### Instructor MVC dashboard
+GET {{backend_HostAddress}}/
+
+### Published exams for the mobile client
+GET {{backend_HostAddress}}/api/exams
+Accept: application/json
+
+### Exam detail
+GET {{backend_HostAddress}}/api/exams/c5762312-3f6b-46d0-8f96-4ab270837001
+Accept: application/json
+
+### Edit a sample exam in the instructor UI
+GET {{backend_HostAddress}}/instructor/exams/c5762312-3f6b-46d0-8f96-4ab270837001/edit
